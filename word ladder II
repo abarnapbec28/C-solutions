@@ -1,0 +1,172 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+typedef struct {
+    char*** paths;
+    int size;
+    int capacity;
+} ResultList;
+
+void initResult(ResultList* res) {
+    res->size = 0;
+    res->capacity = 16;
+    res->paths = (char***)malloc(res->capacity * sizeof(char**));
+}
+
+void addResult(ResultList* res, char** path, int len) {
+    if (res->size >= res->capacity) {
+        res->capacity *= 2;
+        res->paths = (char***)realloc(res->paths, res->capacity * sizeof(char**));
+    }
+    char** copy = (char**)malloc(len * sizeof(char*));
+    for (int i = 0; i < len; i++) {
+        copy[i] = strdup(path[i]);
+    }
+    res->paths[res->size++] = copy;
+}
+
+typedef struct {
+    int* neighbors;
+    int size;
+    int capacity;
+} AdjList;
+
+void addNeighbor(AdjList* list, int v) {
+    if (list->size >= list->capacity) {
+        list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+        list->neighbors = (int*)realloc(list->neighbors, list->capacity * sizeof(int));
+    }
+    list->neighbors[list->size++] = v;
+}
+
+bool isAdjacent(const char* a, const char* b, int len) {
+    int diff = 0;
+    for (int i = 0; i < len; i++) {
+        if (a[i] != b[i]) {
+            diff++;
+            if (diff > 1) return false;
+        }
+    }
+    return diff == 1;
+}
+
+void dfs(int u, int target, char** words, int* pathIndices, int pathLen, AdjList* adj, ResultList* res) {
+    pathIndices[pathLen - 1] = u;
+    if (u == target) {
+        char** currentPath = (char**)malloc(pathLen * sizeof(char*));
+        for (int i = 0; i < pathLen; i++) {
+            currentPath[i] = words[pathIndices[i]];
+        }
+        addResult(res, currentPath, pathLen);
+        free(currentPath);
+        return;
+    }
+    for (int i = 0; i < adj[u].size; i++) {
+        dfs(adj[u].neighbors[i], target, words, pathIndices, pathLen + 1, adj, res);
+    }
+}
+
+char*** findLadders(char* beginWord, char* endWord, char** wordList, int wordListSize, int* returnSize, int** returnColumnSizes) {
+    *returnSize = 0;
+    int endIdx = -1;
+    for (int i = 0; i < wordListSize; i++) {
+        if (strcmp(wordList[i], endWord) == 0) {
+            endIdx = i;
+            break;
+        }
+    }
+    if (endIdx == -1) {
+        *returnColumnSizes = NULL;
+        return NULL;
+    }
+
+    int totalWords = wordListSize + 1;
+    char** allWords = (char**)malloc(totalWords * sizeof(char*));
+    allWords[0] = beginWord;
+    for (int i = 0; i < wordListSize; i++) {
+        allWords[i + 1] = wordList[i];
+    }
+    endIdx++; 
+
+    int wordLen = strlen(beginWord);
+    int* dist = (int*)malloc(totalWords * sizeof(int));
+    for (int i = 0; i < totalWords; i++) dist[i] = -1;
+
+    AdjList* adj = (AdjList*)calloc(totalWords, sizeof(AdjList));
+
+    int* queue = (int*)malloc(totalWords * sizeof(int));
+    int head = 0, tail = 0;
+
+    queue[tail++] = 0;
+    dist[0] = 0;
+
+    bool found = false;
+
+    while (head < tail) {
+        int levelSize = tail - head;
+        int* currentLevelNodes = (int*)malloc(levelSize * sizeof(int));
+        int currentLevelCount = 0;
+
+        for (int i = 0; i < levelSize; i++) {
+            int u = queue[head++];
+            currentLevelNodes[currentLevelCount++] = u;
+            if (u == endIdx) found = true;
+        }
+
+        if (found) {
+            free(currentLevelNodes);
+            break;
+        }
+
+        for (int i = 0; i < currentLevelCount; i++) {
+            int u = currentLevelNodes[i];
+            for (int v = 0; v < totalWords; v++) {
+                if (isAdjacent(allWords[u], allWords[v], wordLen)) {
+                    if (dist[v] == -1) {
+                        dist[v] = dist[u] + 1;
+                        queue[tail++] = v;
+                        addNeighbor(&adj[u], v);
+                    } else if (dist[v] == dist[u] + 1) {
+                        addNeighbor(&adj[u], v);
+                    }
+                }
+            }
+        }
+        free(currentLevelNodes);
+    }
+
+    ResultList res;
+    initResult(&res);
+
+    if (found) {
+        int* pathIndices = (int*)malloc(totalWords * sizeof(int));
+        dfs(0, endIdx, allWords, pathIndices, 1, adj, &res);
+        free(pathIndices);
+    }
+
+    int expectedPathLen = found ? (dist[endIdx] + 1) : 0;
+
+    for (int i = 0; i < totalWords; i++) {
+        if (adj[i].neighbors) free(adj[i].neighbors);
+    }
+    free(adj);
+    free(dist);
+    free(queue);
+    free(allWords);
+
+    *returnSize = res.size;
+    if (res.size == 0) {
+        free(res.paths);
+        *returnColumnSizes = NULL;
+        return NULL;
+    }
+
+    int* cols = (int*)malloc(res.size * sizeof(int));
+    for (int i = 0; i < res.size; i++) {
+        cols[i] = expectedPathLen;
+    }
+    *returnColumnSizes = cols;
+
+    return res.paths;
+}
