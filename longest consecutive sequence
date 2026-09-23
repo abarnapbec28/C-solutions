@@ -1,0 +1,79 @@
+#include <stdlib.h>
+
+struct HashEntry {
+    int key;
+    int val;
+};
+
+int longestConsecutive(int* nums, int numsSize) {
+    if (numsSize == 0) {
+        return 0;
+    }
+
+    int hashSize = numsSize * 2;
+    struct HashEntry* hash = (struct HashEntry*)calloc(hashSize, sizeof(struct HashEntry));
+
+    for (int i = 0; i < hashSize; i++) {
+        hash[i].val = 0;
+    }
+
+    for (int i = 0; i < numsSize; i++) {
+        int key = nums[i];
+        unsigned int hashIdx = (key < 0 ? (unsigned int)(-key) : (unsigned int)key) % hashSize;
+        while (hash[hashIdx].val == 1 && hash[hashIdx].key != key) {
+            hashIdx = (hashIdx + 1) % hashSize;
+        }
+        hash[hashIdx].key = key;
+        hash[hashIdx].val = 1;
+    }
+
+    int longestStreak = 0;
+
+    for (int i = 0; i < numsSize; i++) {
+        int num = nums[i];
+        int prev = num - 1;
+        unsigned int hashIdx = (prev < 0 ? (unsigned int)(-prev) : (unsigned int)prev) % hashSize;
+        bool hasPrev = false;
+
+        while (hash[hashIdx].val == 1) {
+            if (hash[hashIdx].key == prev) {
+                hasPrev = true;
+                break;
+            }
+            hashIdx = (hashIdx + 1) % hashSize;
+        }
+
+        if (!hasPrev) {
+            int currentNum = num;
+            int currentStreak = 1;
+
+            while (1) {
+                int next = currentNum + 1;
+                unsigned int nextIdx = (next < 0 ? (unsigned int)(-next) : (unsigned int)next) % hashSize;
+                bool hasNext = false;
+
+                while (hash[nextIdx].val == 1) {
+                    if (hash[nextIdx].key == next) {
+                        hasNext = true;
+                        break;
+                    }
+                    nextIdx = (nextIdx + 1) % hashSize;
+                }
+
+                if (hasNext) {
+                    currentNum += 1;
+                    currentStreak += 1;
+                } else {
+                    break;
+                }
+            }
+
+            if (currentStreak > longestStreak) {
+                longestStreak = currentStreak;
+            }
+        }
+    }
+
+    free(hash);
+    return longestStreak;
+}
