@@ -1,0 +1,82 @@
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+bool isOneLetterDiff(const char* a, const char* b, int len) {
+    int diff = 0;
+    for (int i = 0; i < len; i++) {
+        if (a[i] != b[i]) {
+            diff++;
+            if (diff > 1) return false;
+        }
+    }
+    return diff == 1;
+}
+
+int ladderLength(char* beginWord, char* endWord, char** wordList, int wordListSize) {
+    int endIdx = -1;
+    for (int i = 0; i < wordListSize; i++) {
+        if (strcmp(wordList[i], endWord) == 0) {
+            endIdx = i;
+            break;
+        }
+    }
+    if (endIdx == -1) {
+        return 0;
+    }
+
+    int wordLen = strlen(beginWord);
+    bool* visited = (bool*)calloc(wordListSize, sizeof(bool));
+    
+    int* queue = (int*)malloc((wordListSize + 1) * sizeof(int));
+    int* levels = (int*)malloc((wordListSize + 1) * sizeof(int));
+    int head = 0, tail = 0;
+
+    for (int i = 0; i < wordListSize; i++) {
+        if (isOneLetterDiff(beginWord, wordList[i], wordLen)) {
+            if (i == endIdx) {
+                free(visited);
+                free(queue);
+                free(levels);
+                return 2;
+            }
+            queue[tail] = i;
+            levels[tail] = 2;
+            tail++;
+            visited[i] = true;
+        }
+    }
+
+    while (head < tail) {
+        int currIdx = queue[head];
+        int currLevel = levels[head];
+        head++;
+
+        if (currIdx == endIdx) {
+            free(visited);
+            free(queue);
+            free(levels);
+            return currLevel;
+        }
+
+        for (int i = 0; i < wordListSize; i++) {
+            if (!visited[i] && isOneLetterDiff(wordList[currIdx], wordList[i], wordLen)) {
+                if (i == endIdx) {
+                    free(visited);
+                    free(queue);
+                    free(levels);
+                    return currLevel + 1;
+                }
+                queue[tail] = i;
+                levels[tail] = currLevel + 1;
+                tail++;
+                visited[i] = true;
+            }
+        }
+    }
+
+    free(visited);
+    free(queue);
+    free(levels);
+    return 0;
+}
