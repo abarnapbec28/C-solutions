@@ -1,0 +1,61 @@
+#include <string.h>
+#include <limits.h>
+
+char* minWindow(char* s, char* t) {
+    int s_len = strlen(s);
+    int t_len = strlen(t);
+    
+    if (s_len == 0 || t_len == 0 || s_len < t_len) {
+        return "";
+    }
+
+    int dict_t[128] = {0};
+    int window_counts[128] = {0};
+
+    for (int i = 0; i < t_len; i++) {
+        dict_t[(unsigned char)t[i]]++;
+    }
+
+    int required = 0;
+    for (int i = 0; i < 128; i++) {
+        if (dict_t[i] > 0) {
+            required++;
+        }
+    }
+
+    int formed = 0;
+    int left = 0;
+    int min_len = INT_MAX;
+    int start_idx = 0;
+
+    for (int right = 0; right < s_len; right++) {
+        char c = s[right];
+        window_counts[(unsigned char)c]++;
+
+        if (dict_t[(unsigned char)c] > 0 && window_counts[(unsigned char)c] == dict_t[(unsigned char)c]) {
+            formed++;
+        }
+
+        while (left <= right && formed == required) {
+            char left_c = s[left];
+
+            if (right - left + 1 < min_len) {
+                min_len = right - left + 1;
+                start_idx = left;
+            }
+
+            window_counts[(unsigned char)left_c]--;
+            if (dict_t[(unsigned char)left_c] > 0 && window_counts[(unsigned char)left_c] < dict_t[(unsigned char)left_c]) {
+                formed--;
+            }
+            left++;
+        }
+    }
+
+    if (min_len == INT_MAX) {
+        return "";
+    }
+
+    s[start_idx + min_len] = '\0';
+    return &s[start_idx];
+}
