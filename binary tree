@@ -1,0 +1,64 @@
+#include <stdlib.h>
+
+struct HashEntry {
+    int key;
+    int val;
+};
+
+int findInorderIndex(struct HashEntry* hash, int size, int key) {
+    int hashIdx = (key < 0 ? -key : key) % size;
+    while (hash[hashIdx].key != key) {
+        hashIdx = (hashIdx + 1) % size;
+    }
+    return hash[hashIdx].val;
+}
+
+struct TreeNode* buildTreeHelper(int* preorder, int* preIdx, int inStart, int inEnd, struct HashEntry* hash, int hashSize) {
+    if (inStart > inEnd) {
+        return NULL;
+    }
+
+    int rootVal = preorder[*preIdx];
+    (*preIdx)++;
+
+    struct TreeNode* root = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+    root->val = rootVal;
+    root->left = NULL;
+    root->right = NULL;
+
+    int inIdx = findInorderIndex(hash, hashSize, rootVal);
+
+    root->left = buildTreeHelper(preorder, preIdx, inStart, inIdx - 1, hash, hashSize);
+    root->right = buildTreeHelper(preorder, preIdx, inIdx + 1, inEnd, hash, hashSize);
+
+    return root;
+}
+
+struct TreeNode* buildTree(int* preorder, int preorderSize, int* inorder, int inorderSize) {
+    if (preorderSize == 0 || inorderSize == 0) {
+        return NULL;
+    }
+
+    int hashSize = inorderSize * 2;
+    struct HashEntry* hash = (struct HashEntry*)calloc(hashSize, sizeof(struct HashEntry));
+
+    for (int i = 0; i < hashSize; i++) {
+        hash[i].key = 4000; 
+    }
+
+    for (int i = 0; i < inorderSize; i++) {
+        int key = inorder[i];
+        int hashIdx = (key < 0 ? -key : key) % hashSize;
+        while (hash[hashIdx].key != 4000) {
+            hashIdx = (hashIdx + 1) % hashSize;
+        }
+        hash[hashIdx].key = key;
+        hash[hashIdx].val = i;
+    }
+
+    int preIdx = 0;
+    struct TreeNode* root = buildTreeHelper(preorder, &preIdx, 0, inorderSize - 1, hash, hashSize);
+
+    free(hash);
+    return root;
+}
