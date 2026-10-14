@@ -1,0 +1,53 @@
+#include <stdlib.h>
+
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
+int* searchRange(int* nums, int numsSize, int target, int* returnSize) {
+    // Allocate memory for the output array containing 2 integers
+    int* result = (int*)malloc(2 * sizeof(int));
+    *returnSize = 2;
+    
+    // Initialize results to -1
+    result[0] = -1;
+    result[1] = -1;
+    
+    if (numsSize == 0) {
+        return result;
+    }
+    
+    // 1. Find the starting (leftmost) position
+    int low = 0, high = numsSize - 1;
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        if (nums[mid] == target) {
+            result[0] = mid;     // Track potential starting index
+            high = mid - 1;      // Keep searching to the left
+        } else if (nums[mid] < target) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    
+    // If the target wasn't found in the first search, it's not in the array
+    if (result[0] == -1) {
+        return result;
+    }
+    
+    // 2. Find the ending (rightmost) position
+    low = 0, high = numsSize - 1;
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        if (nums[mid] == target) {
+            result[1] = mid;     // Track potential ending index
+            low = mid + 1;       // Keep searching to the right
+        } else if (nums[mid] < target) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    
+    return result;
+}
